@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "sca",
+      "input": "import org.apache.spark.sql.DataFrame\nimport scala.collection.mutable.ListBuffer\nimport _root_.hex.tree.gbm.GBM //Import GBM packages\nimport _root_.hex.tree.gbm.GBMModel.GBMParameters\nimport _root_.hex.tree.gbm.GBMModel\n\n// Load the dataset into a Spark DataFrame using the spark-csv package .\n// You can learn more about the package here at https://github.com/databricks/spark-csv\nval data_df = {sqlContext.read\n               .format(\"com.databricks.spark.csv\")\n               .option(\"header\", \"true\") // Use first line of all files as header\n               .option(\"inferSchema\", \"true\") //Automatically infer data types\n               .load(\"skewdata-policy-new.csv\")\n               }"
+    },
+    {
+      "type": "sca",
+      "input": "val policyids = data_df.select(\"policyid\").distinct() //Create a policies dataframe\nval num_of_samples:Int = 10\nval policyid_sample_fraction:Double = 1.0\n\n//Define a function to create clustered samples based on policyid\ndef clusteredSamples(data:DataFrame,policies:DataFrame,policyid_sample_fraction:Double,num_of_samples:Int): List[DataFrame] = {\n    val samples = new ListBuffer[DataFrame]()  \n    for (i <- List.range(0,num_of_samples)){\n        val policyids_sample = policies.sample(withReplacement=false, fraction=policyid_sample_fraction) //Create a sample of the unique policy ids    \n        val sample = policyids_sample.join(data,policyids_sample(\"policyid\") === data(\"policyid\"),\"inner\") //Sample the data based on the sampled policyids\n        val sample1 = sample.select(\"age\",\"values\")\n        samples += sample1 }\n    return samples.toList\n}"
+    },
+    {
+      "type": "sca",
+      "input": "//Define a function to run H20 GBM model on samples in sequence\ndef runGBMSeq(samples:List[water.Key[water.fvec.Frame]]): List[GBMModel] = {   \n    val modelsList = new ListBuffer[GBMModel]()\n    val response_variable = \"values\"\n    for(i <- List.range(0,samples.length)){ //Loop through the samples and fit the GBM model\n    \tval sample_hf = samples(i)\n        val gbmParams = new GBMParameters() //Create a GBM Model Parameters\n        gbmParams._distribution = _root_.hex.Distribution.Family.tweedie\n        gbmParams._response_column = response_variable\n        gbmParams._ntrees = 50\n        gbmParams._train = sample_hf //Set the training set for the model\n        val sampleGbmModel = new GBM(gbmParams).trainModel.get //Fit the GBM model \n        modelsList += sampleGbmModel }\n    return modelsList.toList\n}"
+    },
+    {
+      "type": "sca",
+      "input": "//Define a function to run H20 GBM models in parallel\ndef runGBMParallel(samples:List[water.Key[water.fvec.Frame]]): List[GBMModel] = {\n    def fitGBMModel(sample_hf:water.Key[water.fvec.Frame]): GBMModel = { //Define a function to fit GBM Model on each h2oFrame\n   \t\tval gbmParams = new GBMParameters() //Create GBM Model parameters\n        gbmParams._distribution = _root_.hex.Distribution.Family.tweedie\n        gbmParams._response_column = \"values\"\n        gbmParams._ntrees = 50        \n        gbmParams._train = sample_hf //Set the training set for the model\n   \t\tval sampleGbmModel = new GBM(gbmParams).trainModel.get //Fit the GBM Model\n   \t\treturn sampleGbmModel \n        }\n    val samplesParallel = samples.par //Create a parallel collection from samples list\n    val modelsList =  samplesParallel.map( h2f => fitGBMModel(h2f)) //This runs fitGBMModel function in parallel\n    return modelsList.toList\n}"
+    },
+    {
+      "type": "sca",
+      "input": "// Create Clustered bootstrap samples\nval sampleList = clusteredSamples(data_df,policyids,policyid_sample_fraction,num_of_samples) //Create a sampleList that consists of bootstrap samples\nval h2oFramesList = sampleList.map(df => h2oContext.asH2OFrame(df)) // Create a list of H2oFrames from the bootstrap Spark DataFrames\nval h20FrameKeys = h2oFramesList.map(h2f => h2f.key) //H2o algorithms expect the data to be of type water.key[water.fvec.Frame] \n\n//Generate several GBMModels on a given list of H2oFrames\nval sampleH20GBMModelsSeq = runGBMSeq(h20FrameKeys)\nval sampleH20GBMModelsParallel = runGBMParallel(h20FrameKeys)\n\n//Print the model metrics\nfor (model <- sampleH20GBMModelsParallel) println(\"==> \"+ model._output._training_metrics)\nprintln(\"<=====================================>\")\nfor (model <- sampleH20GBMModelsSeq) println(\"==>\"+ model._output._training_metrics)"
+    }
+  ]
+}

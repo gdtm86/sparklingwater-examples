@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "sca",
+      "input": "import org.apache.spark.sql.DataFrame\nimport scala.collection.mutable.ListBuffer\nimport _root_.hex.glm.GLM //Import GLM packages\nimport _root_.hex.glm.GLMModel.GLMParameters\nimport _root_.hex.glm.GLMModel\nimport _root_.hex.glm.GLMModel.GLMParameters.Solver.L_BFGS\n\n// Load the dataset into a Spark DataFrame using the spark-csv package .\n// You can learn more about the package here at https://github.com/databricks/spark-csv\nval simDataDF = {sqlContext.read\n                 .format(\"com.databricks.spark.csv\")\n                 .option(\"header\", \"true\") // Use first line of all files as header\n                 .option(\"inferSchema\", \"true\") //Automatically infer data types\n                 .load(\"simdata_20K_120vars.csv\")\n                 .selectExpr(\"y_tweedie1\",\"ind1\",\"x1\",\"x2\",\"x4\",\"x5\",\"log_ga1\",\"log_ga2\",\"log_ga1*x2 as log_ga1_x2\")\n                 }"
+    },
+    {
+      "type": "sca",
+      "input": "val numOfSamples:Int = 10      //number of bootstrap samples to create\nval sampleRatio: Double = 1.0  //Size in ratio compared to the original dataframe size\n\n//Define a function to create bootstrap samples\ndef getBootstrapSamples(simDF:DataFrame, numOfSamples:Int, sampleRatio:Double): List[DataFrame] = {\n    val simDFSamples = new ListBuffer[DataFrame]() \n    for (i <- List.range(0,numOfSamples)){\n        val simDFSample = simDF.sample(withReplacement=true, fraction=sampleRatio)\n        simDFSamples += simDFSample }\n    return simDFSamples.toList\n}"
+    },
+    {
+      "type": "sca",
+      "input": "//Define a function to run H20 GLM model on samples in sequence\ndef runGLMSeq(samples:List[water.Key[water.fvec.Frame]]): List[GLMModel] = {\n    val glmModelsList = new ListBuffer[GLMModel]() \n    for(i <- List.range(0,samples.length)){ //Loop through the samples and fit the GLM model\n    \tval current_hf = samples(i) \n        val glmParams = new GLMParameters() //Create a GLM Model Parameters\n        glmParams._distribution = _root_.hex.Distribution.Family.tweedie\n        glmParams._response_column = \"y_tweedie1\"\n        glmParams._tweedie_power = 1.8\n        glmParams._max_iterations = 100\n        glmParams._solver =  _root_.hex.glm.GLMModel.GLMParameters.Solver.L_BFGS\n        glmParams._train = current_hf //Set the training set for the model\n        val sampleGLMModel = new GLM(glmParams).trainModel.get //Fit the GLM model\n        glmModelsList += sampleGLMModel }\n    return glmModelsList.toList \n}"
+    },
+    {
+      "type": "sca",
+      "input": "//Define a function to run H20 GLM model on samples in parallel\ndef runGLMsParallel(samples:List[water.Key[water.fvec.Frame]]): List[GLMModel] = {\n    def fitGLMModel(sample_hf:water.Key[water.fvec.Frame]): GLMModel = { //Define a function to fit GLM Model on each h2oFrame\n        val glmParams = new GLMParameters() //Create a GLM Model Parameters\n        glmParams._distribution = _root_.hex.Distribution.Family.tweedie\n        glmParams._response_column = \"y_tweedie1\"\n        glmParams._tweedie_power = 1.8\n        glmParams._max_iterations = 100\n        glmParams._solver =  _root_.hex.glm.GLMModel.GLMParameters.Solver.L_BFGS\n        glmParams._train = sample_hf //Set the training set for the model\n        val sampleGLMModel = new GLM(glmParams).trainModel.get //Fit the GLM model\n        return  sampleGLMModel \n        }\n    val samplesParallel = samples.par //Create a parallel collection from samples list\n    val modelsList =  samplesParallel.map( h2f => fitGLMModel(h2f)) //This runs fitGLMModel function in parallel\n    return modelsList.toList\n}"
+    },
+    {
+      "type": "sca",
+      "input": "//Create bootstrap samples\nval simDataDFSamplesList = getBootstrapSamples(simDataDF,numOfSamples,sampleRatio)\nval simDataH2FList = simDataDFSamplesList.map(df => h2oContext.asH2OFrame(df))//Convert SparkDataFrames -> h20Frames\nval simDataH2FKeysList = simDataH2FList.map(h2f => h2f.key) // H20 algorithms expect the data to be of type water.Key[water.fvec.Frame]\n\n//Generate several GLMModels on a given list of H2oFrames\nval sampleH20GLMModelsSeq = runGLMSeq(simDataH2FKeysList)\nval sampleH20GLMModelsParallel = runGLMsParallel(simDataH2FKeysList)\n\n//Print the model metrics\nfor (model <- sampleH20GLMModelsSeq) println(\"==> \"+ model._output._training_metrics)\nprintln(\"<===========================================>\")\nfor (model <- sampleH20GLMModelsParallel) println(\"==> \"+ model._output._training_metrics)"
+    },
+    {
+      "type": "cs",
+      "input": "getJobs"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "sca",
+      "input": "import org.apache.spark.sql.DataFrame\nimport scala.collection.mutable.ListBuffer\nimport org.apache.spark.ml.feature.VectorAssembler\nimport org.apache.spark.ml.regression.LinearRegression\nimport org.apache.spark.ml.regression.LinearRegressionModel\nimport org.apache.spark.mllib.linalg.DenseVector\nimport org.apache.spark.mllib.linalg.Vector\n\n// Load the dataset into a Spark DataFrame using the spark-csv package .\n// You can learn more about the package here at https://github.com/databricks/spark-csv\nval data_df = (sqlContext.read\n              .format(\"com.databricks.spark.csv\")\n              .option(\"header\", \"true\") // Use first line of all files as header\n              .option(\"inferSchema\", \"true\") //Automatically infer data types\n              .load(\"skewdata-policy-new.csv\")\n              )\n\nval policyids = data_df.select(\"policyid\").distinct() //Create a policies dataframe\nval num_of_samples:Int = 10 //Number of bootstrap samples\nval policyid_sample_fraction:Double = 0.8 //Ratio of policy_ids to be included in each bootstrap sample\n"
+    },
+    {
+      "type": "sca",
+      "input": "//Define a function to create clustered samples based on policyid\ndef clusteredSamples(data:DataFrame,policies:DataFrame,policyid_sample_fraction:Double,num_of_samples:Int): List[DataFrame] = {\n    val samples = new ListBuffer[DataFrame]()\n    for (i <- List.range(0,num_of_samples)){\n        val policyids_sample = policies.sample(withReplacement=false, fraction=policyid_sample_fraction)\n        val sample = policyids_sample.join(data,policyids_sample(\"policyid\") === data(\"policyid\"),\"inner\")\n        samples += sample }\n    return samples.toList\n}"
+    },
+    {
+      "type": "sca",
+      "input": "//Define a function to run linear regression algorithm on bootstrap samples in sequence\ndef runLinearRegression(samples:List[DataFrame]): List[LinearRegressionModel] = {\n    \n    val sampleModels = new ListBuffer[LinearRegressionModel]() \n    val vectorAssembler = new VectorAssembler().setInputCols(Array(\"age\")).setOutputCol(\"featuresVector\") //Create a vector Assembler\n    val lr = {new LinearRegression() //Create a linear regresson model\n    \t\t  .setFeaturesCol(\"featuresVector\")\n    \t\t  .setLabelCol(\"values\")\n    \t      .setPredictionCol(\"predictedValues\")\n    \t      .setMaxIter(5)\n    \t      .setElasticNetParam(0.5)\n    \t      //.setSolver(\"l-bfgs\") This setting is only available from Spark 1.6\n              }\n    for(i <- List.range(0,samples.length)){ //Loop through the samples and fit the regression model\n    \tval sample_df = samples(i)\n        val sample_df1 = vectorAssembler.transform(sample_df)\n        val sample_lr = lr.fit(sample_df1) //Fit the linear Regression model\n        sampleModels += sample_lr }\n    return sampleModels.toList   \n}"
+    },
+    {
+      "type": "sca",
+      "input": "//Define a function to run Linear regression algorithm on samples in parallel\ndef runLinearRegressionParallel(samples:List[DataFrame]): List[LinearRegressionModel] = {\n    val vectorAssembler = new VectorAssembler().setInputCols(Array(\"age\")).setOutputCol(\"featuresVector\") //Create a vector Assembler    \n    val lr = {new LinearRegression() //Create a linear regresson model\n    \t\t  .setFeaturesCol(\"featuresVector\")\n    \t\t  .setLabelCol(\"values\")\n    \t      .setPredictionCol(\"predictedValues\")\n    \t      .setMaxIter(5)\n    \t      .setElasticNetParam(0.5)\n    \t      //.setSolver(\"l-bfgs\") This setting is only available from Spark 1.6 \n              }\n   def fitModel(sample_df:DataFrame): LinearRegressionModel = { //Define a function to fit the regression Model on each dataFrame\n   \t\tval sample_df1 = vectorAssembler.transform(sample_df)\n   \t\tval sample_lr = lr.fit(sample_df1)\n   \t\treturn sample_lr\n   }\n   val samplesParallel = samples.par //Create a parallel collection from samples list\n   val sampleModels =  samplesParallel.map( sample => fitModel(sample)) // This runs fitModel in parallel \n   return sampleModels.toList\n}"
+    },
+    {
+      "type": "sca",
+      "input": "//Create Clustered BootStrap Samples\nval sampleList = clusteredSamples(data_df,policyids,policyid_sample_fraction,num_of_samples)\n\n//Generate several linear regression models\nval sampleModelsSeq = runLinearRegression(sampleList)\nval sampleModelsParallel = runLinearRegressionParallel(sampleList)\n\n//Print the model coefficients\nfor (model <- sampleModelsSeq) println(model.weights) // It will be model.coefficients from Spark 1.6\nprintln(\"<------------------------------->\")\nfor (model <- sampleModelsParallel) println(model.weights) // It will be model.coefficients from Spark 1.6"
+    }
+  ]
+}
