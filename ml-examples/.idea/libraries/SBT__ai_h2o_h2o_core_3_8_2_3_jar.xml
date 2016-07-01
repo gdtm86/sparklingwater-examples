@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="SBT: ai.h2o:h2o-core:3.8.2.3:jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/ai.h2o/h2o-core/jars/h2o-core-3.8.2.3.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.ivy2/cache/ai.h2o/h2o-core/docs/h2o-core-3.8.2.3-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/ai.h2o/h2o-core/srcs/h2o-core-3.8.2.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
