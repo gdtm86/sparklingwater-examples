@@ -48,6 +48,15 @@ Three main classes in this example project are:
 * ***com.cloudera.sa.ml.sparklingwater.GlmBootstrap.scala***
 * ***com.cloudera.sa.ml.spark.GlmBootstrap.scala***
 
+
+Compile the code and build a target jar file. Once the jar file is created, copy the jar file to hadoop cluster and submit a spark job as shown below to run Bootstrap on GBM using H2o algorithms.
+
+```
+spark-submit --master yarn-cluster --driver-memory 3g --driver-cores 2 --executor-memory 4g --executor-cores 3 
+--num-executors 4 --jars jars/commons-csv-1.1.jar,jars/spark-csv_2.10-1.4.0.jar,./sparkling-water-1.5.14/assembly/build/libs/sparkling-water-assembly-1.5.14-all.jar 
+--class com.cloudera.sa.ml.sparklingwater.GBMBootstrap ml-examples_2.10-1.0.jar skewdata-policy-new.csv data/output/2
+```
+
 ## h2o-examples-flow_ui
 
 This section consists of scala flow code that can be imported. Learn more about [H2o flow](http://www.h2o.ai/product/flow/)
