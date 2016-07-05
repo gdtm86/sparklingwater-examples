@@ -1,5 +1,5 @@
 Sparkling Water, Bootstrap, Clustered Bootstrap and CrossValidation Examples
-=============================================================================
+============================================================================
 
 ![Sparkling Water](http://www.h2o.ai/assets/images/sparkling-water.png)
 
@@ -25,7 +25,7 @@ In these examples, we demonstrate bootstrap on glm using both Apache Spark MLlib
 * Perform bootstrap on glm in parallel using plain apache spark MLlib (CDH 5.5.1): ***spark-mllib-glm-clustered_bootstrap_cdh551.scala***
 * Perform bootstrap on glm in parallel using plain apache spark MLlib (CDH 5.7.0): ***spark-mllib-glm-clustered_bootstrap_cdh570.scala***
 
-More on this section [here]()
+More on this section [here](spark-examples-scala-shell/README.md)
 
 ## spark-examples-python-notebooks
 
@@ -36,7 +36,7 @@ This section consists of ipyton notebooks running in PySpark shell. Notebooks in
 * Perform distributed cross validation of random forests model using PySpark and ML Pipelines: ***pyspark-mllib-randomforests-crossvalidation.ipynb***
 * Perform parallel cross validation of single machine scikit-learn models using PySpark and spark-sklearn package: ***pyspark-sklearn-crossvalidation.ipynb***
 
-More on this section [here]()
+More on this section [here](spark-examples-python-notebooks/README.md)
 
 ## h2o-examples-scala-ide
 
