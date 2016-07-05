@@ -1,12 +1,10 @@
 Sparkling Water, Bootstrap, Clustered Bootstrap and CrossValidation Examples
 =============================================================================
 
-This repository that consists of examples of machine learning techinques like bootstrap and clustered bootstrap implemented using Apache Spark and H2o Sparkling Water
+![Sparkling Water](http://www.h2o.ai/assets/images/sparkling-water.png)
 
-Learn more about [Apache Spark](http://spark.apache.org/docs/latest/). 
-Learn more about [Apache Spark MLlib and ML](http://spark.apache.org/docs/latest/mllib-guide.html).
-Learn more about [H2o Sparkling Water](http://www.h2o.ai/download/sparkling-water/spark15).
-Learn more about h2o sparkling water [developer guide](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
+
+This repository that consists of examples of machine learning techinques like bootstrap and clustered bootstrap implemented using Apache Spark and H2o Sparkling Water.
 
 Repository consists of the following sections:
 
@@ -27,6 +25,7 @@ In these examples, we demonstrate bootstrap on glm using both Apache Spark MLlib
 * Perform bootstrap on glm in parallel using plain apache spark MLlib (CDH 5.5.1): ***spark-mllib-glm-clustered_bootstrap_cdh551.scala***
 * Perform bootstrap on glm in parallel using plain apache spark MLlib (CDH 5.7.0): ***spark-mllib-glm-clustered_bootstrap_cdh570.scala***
 
+More on this section [here]()
 
 ## spark-examples-python-notebooks
 
@@ -36,6 +35,8 @@ This section consists of ipyton notebooks running in PySpark shell. Notebooks in
 * Perform clustered bootstrap on glm using PySpark and MLlib: ***pyspark-mllib-glm-clustered_bootstrap.ipynb***
 * Perform distributed cross validation of random forests model using PySpark and ML Pipelines: ***pyspark-mllib-randomforests-crossvalidation.ipynb***
 * Perform parallel cross validation of single machine scikit-learn models using PySpark and spark-sklearn package: ***pyspark-sklearn-crossvalidation.ipynb***
+
+More on this section [here]()
 
 ## h2o-examples-scala-ide
 
@@ -65,3 +66,12 @@ Data section consists of all the synthetic datasets that were used in the above 
 * Skewdata-policy-new.csv
 * skewdata.csv 
 * simdata_20K_120vars.csv.zip (compressed)
+
+## Addtional Info
+
+- Learn more about [Apache Spark](http://spark.apache.org/docs/latest/). 
+- Learn more about [Apache Spark MLlib and ML](http://spark.apache.org/docs/latest/mllib-guide.html).
+- Learn more about [H2o Sparkling Water](http://www.h2o.ai/download/sparkling-water/spark15).
+- Learn more about h2o sparkling water [developer guide](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
+- Learn more about [Spark-sklearn](https://github.com/databricks/spark-sklearn)
+- Learn more about [Bootstrapping (Statistics)](https://en.wikipedia.org/wiki/Bootstrapping_(statistics))
