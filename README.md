@@ -67,6 +67,8 @@ This section consists of scala flow code that can be imported. Learn more about 
 
 You can load the following flow files in H2o flow UI as described on [Flow Guide](http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-docs/index.html#%E2%80%A6%20Using%20Flows-Saving%20Flows-Loading%20Flows)
 
+More on this section [here](h2o-exanples-flow_ui/README.md)
+
 ## Data
 
 Data section consists of all the synthetic datasets that were used in the above scala and python examples. When you download this
