@@ -1,5 +1,5 @@
 Sparkling Water, Bootstrap, Clustered Bootstrap and CrossValidation Examples
-============================================================================
+=============================================================================
 
 ![Sparkling Water](http://www.h2o.ai/assets/images/sparkling-water.png)
 
